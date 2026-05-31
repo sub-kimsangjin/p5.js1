@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>나의 p5.js 작품</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #141414;
+      --border: #2a2a2a;
+      --accent: #c8f04a;
+      --accent2: #f04a8a;
+      --text: #f0ece0;
+      --muted: #888;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 0 28px 28px;
+    }
+
+    header {
+      text-align: center;
+      padding: 36px 0 18px;
+      flex-shrink: 0;
+    }
+
+    .main-title {
+      font-family: 'Nanum Myeongjo', serif;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      background: linear-gradient(135deg, #f0ece0 40%, #c8f04a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: fadeDown 0.7s ease both;
+    }
+
+    .accent-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #c8f04a;
+      border-radius: 50%;
+      margin-left: 6px;
+      vertical-align: middle;
+      -webkit-text-fill-color: initial;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      font-size: clamp(0.8rem, 1.6vw, 1rem);
+      font-weight: 300;
+      color: #888;
+      letter-spacing: 0.04em;
+      animation: fadeDown 0.7s 0.15s ease both;
+    }
+
+    /* 배치 순서: 좌상=sample1, 우상=sample4, 좌하=sample2, 우하=sample3 */
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      grid-template-areas:
+        "p1 p4"
+        "p2 p3";
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .project {
+      position: relative;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #141414;
+      transition: border-color 0.25s, transform 0.25s;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .project[data-p="1"] { grid-area: p1; animation-delay: 0.20s; }
+    .project[data-p="2"] { grid-area: p2; animation-delay: 0.30s; }
+    .project[data-p="3"] { grid-area: p3; animation-delay: 0.40s; }
+    .project[data-p="4"] { grid-area: p4; animation-delay: 0.50s; }
+
+    /* 이미지/GIF 를 카드 전체에 꽉 채우는 레이어 (프로젝트 1, 2에만 사용) */
+    .project-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.55;
+      transition: opacity 0.3s;
+    }
+    .project:hover .project-bg { opacity: 0.75; }
+
+    /* ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+       이미지/GIF 경로 입력 위치 (프로젝트 1, 2만 해당)
+
+       url( ) 안의 텍스트를 실제 파일 이름으로 바꾸세요.
+
+       파일이 index.html 과 같은 폴더에 있을 때:
+         url('파일이름.gif')
+         url('파일이름.png')
+
+       파일이 images 라는 하위 폴더 안에 있을 때:
+         url('images/파일이름.gif')
+    ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★ */
+
+    /* ★ 프로젝트 1 이미지 경로 — 여기만 수정하세요 */
+    .project[data-p="1"] .project-bg {
+      background-image: url('screen1.png');
+    }
+
+    /* ★ 프로젝트 2 이미지 경로 — 여기만 수정하세요 */
+    .project[data-p="2"] .project-bg {
+      background-image: url('screen2.png');
+    }
+
+    /* 테두리 → 투명 그라디언트 마스크
+       텍스트가 있는 좌/상/하단 쪽을 더 넓게 가려서 글씨가 잘 보이게 합니다 */
+    .project-fade {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        linear-gradient(to right,  rgba(13,13,13,0.95) 0%, rgba(13,13,13,0.5) 38%, transparent 60%),
+        linear-gradient(to left,   rgba(13,13,13,0.85) 0%, transparent 35%),
+        linear-gradient(to bottom, rgba(13,13,13,0.95) 0%, rgba(13,13,13,0.4) 40%, transparent 65%),
+        linear-gradient(to top,    rgba(13,13,13,0.92) 0%, rgba(13,13,13,0.4) 35%, transparent 60%);
+    }
+
+    .project::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      border-radius: 4px;
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
+    .project:hover { transform: translateY(-2px); }
+    .project:hover::after { opacity: 1; }
+
+    .project[data-p="1"]:hover { border-color: #c8f04a; }
+    .project[data-p="1"]::after { background: radial-gradient(ellipse at 20% 30%, rgba(200,240,74,.07) 0%, transparent 65%); }
+
+    .project[data-p="2"]:hover { border-color: #74c8f0; }
+    .project[data-p="2"]::after { background: radial-gradient(ellipse at 20% 30%, rgba(116,200,240,.08) 0%, transparent 65%); }
+
+    .project[data-p="3"]:hover { border-color: #f04a8a; }
+    .project[data-p="3"]::after { background: radial-gradient(ellipse at 20% 30%, rgba(240,74,138,.07) 0%, transparent 65%); }
+
+    .project[data-p="4"]:hover { border-color: #f0c44a; }
+    .project[data-p="4"]::after { background: radial-gradient(ellipse at 20% 30%, rgba(240,196,74,.07) 0%, transparent 65%); }
+
+    .project-num {
+      position: absolute;
+      bottom: 14px;
+      right: 18px;
+      z-index: 3;
+      font-family: 'Nanum Myeongjo', serif;
+      font-size: 5rem;
+      font-weight: 800;
+      color: rgba(255,255,255,0.04);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .project a {
+      position: relative;
+      z-index: 3;
+      display: block;
+      padding: 22px 24px;
+      text-decoration: none;
+      color: #f0ece0;
+      height: 100%;
+    }
+
+    .project-label {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #c8f04a;
+      background: rgba(200,240,74,0.1);
+      border: 1px solid rgba(200,240,74,0.25);
+      padding: 3px 8px;
+      border-radius: 2px;
+      margin-bottom: 12px;
+    }
+    .project[data-p="2"] .project-label { color: #74c8f0; background: rgba(116,200,240,0.08); border-color: rgba(116,200,240,0.25); }
+    .project[data-p="3"] .project-label { color: #f04a8a; background: rgba(240,74,138,0.08); border-color: rgba(240,74,138,0.25); }
+    .project[data-p="4"] .project-label { color: #f0c44a; background: rgba(240,196,74,0.08); border-color: rgba(240,196,74,0.25); }
+
+    .project-title {
+      font-family: 'Nanum Myeongjo', serif;
+      font-size: clamp(0.95rem, 1.6vw, 1.2rem);
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .project-arrow {
+      position: absolute;
+      bottom: 18px;
+      left: 24px;
+      z-index: 3;
+      font-size: 0.78rem;
+      color: #888;
+      letter-spacing: 0.06em;
+      transition: color 0.2s, letter-spacing 0.2s;
+    }
+    .project:hover .project-arrow { color: #f0ece0; letter-spacing: 0.12em; }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.4); opacity: 0.6; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1 class="main-title">나의 p5.js 작품<span class="accent-dot"></span></h1>
+      <p class="subtitle">아래 링크들을 클릭하여 작품을 감상하세요.</p>
+    </header>
+
+    <div class="grid">
+
+      <!-- 프로젝트 1 (좌상단) → sample1/index.html 로 이동 -->
+      <div class="project" data-p="1">
+        <div class="project-bg"></div>
+        <div class="project-fade"></div>
+        <a href="sample1/index.html">
+          <span class="project-label">Project 01</span>
+          <p class="project-title">프로젝트 1: 이 프로그램은 추상화를 그립니다.</p>
+          <span class="project-arrow">감상하기 →</span>
+        </a>
+        <span class="project-num">1</span>
+      </div>
+
+      <!-- 프로젝트 4 (우상단) → sample4/index.html 로 이동 -->
+      <div class="project" data-p="4">
+        <div class="project-bg"></div>
+        <div class="project-fade"></div>
+        <a href="sample4/index.html">
+          <span class="project-label">Project 04</span>
+          <p class="project-title">프로젝트 4: 추상화를 움직입니다.</p>
+          <span class="project-arrow">감상하기 →</span>
+        </a>
+        <span class="project-num">4</span>
+      </div>
+
+      <!-- 프로젝트 2 (좌하단) → sample2/index.html 로 이동 -->
+      <div class="project" data-p="2">
+        <div class="project-bg"></div>
+        <div class="project-fade"></div>
+        <a href="sample2/index.html">
+          <span class="project-label">Project 02</span>
+          <p class="project-title">프로젝트 2: 인물화를 그립니다.</p>
+          <span class="project-arrow">감상하기 →</span>
+        </a>
+        <span class="project-num">2</span>
+      </div>
+
+      <!-- 프로젝트 3 (우하단) → sample3/index.html 로 이동 -->
+      <div class="project" data-p="3">
+        <div class="project-bg"></div>
+        <div class="project-fade"></div>
+        <a href="sample3/index.html">
+          <span class="project-label">Project 03</span>
+          <p class="project-title">프로젝트 3: 인물화를 움직입니다 (마우스와 d,h,l을 통한 상호작용).</p>
+          <span class="project-arrow">감상하기 →</span>
+        </a>
+        <span class="project-num">3</span>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
